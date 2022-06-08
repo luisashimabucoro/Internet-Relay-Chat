@@ -2,7 +2,7 @@
 
 Membros:
 - Luisa Balleroni Shimabucoro - 11832385
-- Matheus Bermudes Viana - 
+- Matheus Bermudes Viana - 11849797
 
 Para rodar o programa basta baixar os arquivos e executar os seguinte comandos presentes no Makefile:
 - make setup
