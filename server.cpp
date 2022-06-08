@@ -10,7 +10,7 @@
 // Biblioteca para utilizar bool e threads
 #include <thread>
 #include <atomic>
-
+using namespace std;
 /*
 Tamanho do buffer está 2048 e o máximo como 4096
 Isso será utilizado para caso uma mensagem ultrapasse o limite
@@ -21,7 +21,7 @@ até que o tamanho da mensagem seja menor que 4096.
 #define TAMANHO_MAXIMO 40960     
 
 // Limitamos o tamanho do nome do usuário, até para não ficar uma interface ruim no chat
-#define TAMANHO_USUARIO 10 
+#define TAMANHO_USUARIO 20 
 
 // Inicialmente, a quantidade de usuários será igual a 0
 int qtdUsuarios = 0;
@@ -31,9 +31,9 @@ char buffer[TAMANHO_BUFFER];
 char bufferMax[TAMANHO_MAXIMO+10]; 
 char message[TAMANHO_BUFFER+TAMANHO_USUARIO+2];
 bool flagFull = true; 
-int serverSocket; 
+int socketServidor; 
 static bool usuarioDesconectado = false; 
-std::atomic<bool> serverOFF (false);
+atomic<bool> serverOFF (false);
 
 typedef struct usuario {
     int socketID;
@@ -43,7 +43,7 @@ typedef struct usuario {
     bool conectado;
 }USUARIO;
 
-USUARIO clients[2]; // stores every usuario conectado to Servidor
+USUARIO usuarios[2]; 
 
 
 // Função para enviar uma mensagem de erro, casa ocorra
@@ -63,9 +63,9 @@ void checa_saida(char message[]){
 
         // Fechar os sockets
         for (int i = 0; i < qtdUsuarios; i++){
-            close(clients[i].socketID);
+            close(usuarios[i].socketID);
         }
-        close(serverSocket);
+        close(socketServidor);
         exit(0);
     }
 }
@@ -74,11 +74,11 @@ void checa_saida(char message[]){
 void envia_mensagem(char* message, int userID, bool sendAll) {
     // Caso a mensagem seja maior que o tamanho máximo, ela será dividida
     if(strlen(message) > TAMANHO_MAXIMO){
-        write(clients[0].socketID, "grande", 6);      
+        write(usuarios[0].socketID, "grande", 6);      
     }
     for(int i = 0; i < 2; i++){
-        if((clients[i].clientID != userID && clients[i].conectado == true) || (sendAll==true && clients[i].conectado == true)){
-            if (write(clients[i].socketID, message, strlen(message)) < 0 && usuarioDesconectado == false) {
+        if((usuarios[i].clientID != userID && usuarios[i].conectado == true) || (sendAll==true && usuarios[i].conectado == true)){
+            if (write(usuarios[i].socketID, message, strlen(message)) < 0 && usuarioDesconectado == false) {
                 erro("\nErro!\n");
             }
         }
@@ -206,35 +206,35 @@ void gerencia_envio(){
 
 int main(int argc, char *argv[]){
     
-    int clientSocket; // clientSocket irá armazenar o "socket descriptor" do usuario
-    int portNum; // portNum irá armazenar a porta utilizada na conexão
+    int socketUsuario; // socketUsuario irá armazenar o "socket descriptor" do usuario
+    int numeroPorta; // numeroPorta irá armazenar a porta utilizada na conexão
 
-    socklen_t clientAddressSize;   // clientAddressSize irá armazenar o tamanho da struct sockaddr_in do usuario
-    struct sockaddr_in serverAddress, clientAddress; // serverAddress e clientAddress irão armazenar os endereços do usuario e do servidor
+    socklen_t tamanhoEnderecoUsuario;   // tamanhoEnderecoUsuario irá armazenar o tamanho da struct sockaddr_in do usuario
+    struct sockaddr_in enderecoServidor, enderecoUsuario; // enderecoServidor e enderecoUsuario irão armazenar os endereços do usuario e do servidor
     
-    char mensagemConectado[60] = "\nConexão realizada com sucesso\n";
+    char mensagemConectado[60] = "\nConexão realizada com sucesso\n\n";
     
-    portNum = atoi(argv[1]);    
+    numeroPorta = atoi(argv[1]);    
 
     // Cria o socket
-    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    socketServidor = socket(AF_INET, SOCK_STREAM, 0);
 
     // Verifica se o socket foi criado com sucesso
     // Se não foi, mostra a mensagem de erro
-    if (serverSocket == -1){
+    if (socketServidor == -1){
         erro("Erro no Socket");
     }
 
-    // Inicializa o serverAddress com zeros 
-    bzero( (char *) &serverAddress, sizeof(serverAddress));  
+    // Inicializa o enderecoServidor com zeros 
+    bzero( (char *) &enderecoServidor, sizeof(enderecoServidor));  
 
     // Define o endereço do servidor
-    serverAddress.sin_family = AF_INET;
+    enderecoServidor.sin_family = AF_INET;
 
     // Armazena o IP do servidor
-    serverAddress.sin_addr.s_addr = INADDR_ANY;
+    enderecoServidor.sin_addr.s_addr = INADDR_ANY;
     // Armazena a porta do servidor - htons() formata a porta que é int para o formato correto
-    serverAddress.sin_port = htons(portNum);   
+    enderecoServidor.sin_port = htons(numeroPorta);   
 
     // opcaoSocket é o 4º argumento do setsockopt(), escolhendo o valor da opção do socket
     int opcaoSocket = 1;
@@ -244,7 +244,7 @@ int main(int argc, char *argv[]){
     // o terceiro é o valor da opção, e o quarto é o tamanho do valor da opção
     // setsockopt() retorna 0 se a opção foi definida com sucesso
     // Se não, retorna -1
-    if (setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, &opcaoSocket, sizeof(int)) < 0){
+    if (setsockopt(socketServidor, SOL_SOCKET, SO_REUSEADDR, &opcaoSocket, sizeof(int)) < 0){
         erro("Erro ao configurar o socket!");
     }
 
@@ -252,54 +252,54 @@ int main(int argc, char *argv[]){
     // O primeiro argumento é o socket descriptor, o segundo é o endereço do servidor
     // o terceiro é o tamanho do endereço do servidor
     // bind() retorna 0 se o bind foi realizado com sucesso
-    if (bind(serverSocket, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) == -1) 
+    if (bind(socketServidor, (struct sockaddr *) &enderecoServidor, sizeof(enderecoServidor)) == -1) 
     {
         erro("Erro ao definir nome para o socket!");
     }
 
     // Configura o socket para aceitar conexões até uma fila de 5 conexões pendentes
     // O primeiro argumento é o socket descriptor, o segundo é o tamanho da fila
-    listen(serverSocket, 2); 
+    listen(socketServidor, 2); 
 
     printf("\nServer Iniciado!\n");
-    printf("%s\n\nPara fechar o servidor, envie ""\\quit""\n", buffer);
+    printf("%s\n\nPara fechar o servidor envie o comando \\quit\n", buffer);
 
     // Cria uma thread para enviar mensagens do servidor para todos
-    std::thread sendMessagesToAll(gerencia_envio);
+    thread threadEnviaMensagens(gerencia_envio);
 
     // Separa a thread de execução para continuar sendo executada independentemente.
-    sendMessagesToAll.detach();
+    threadEnviaMensagens.detach();
 
     // Definir o tamanho do endereço do usuario
-    // clientAddressSize é o tamanho da struct sockaddr_in do usuario
-    clientAddressSize = sizeof(clientAddress);
+    // tamanhoEnderecoUsuario é o tamanho da struct sockaddr_in do usuario
+    tamanhoEnderecoUsuario = sizeof(enderecoUsuario);
 
     // Enquanto o servidor estiver rodando
     while(!serverOFF){ 
 
         // accept() é uma função que irá aceitar conexãos em um socket 
         // accept() retorna o socket descriptor do usuario
-        clientSocket = accept(serverSocket, (struct sockaddr *) &clientAddress, &clientAddressSize);    
+        socketUsuario = accept(socketServidor, (struct sockaddr *) &enderecoUsuario, &tamanhoEnderecoUsuario);    
         
         // Verifica se o socket foi criado com sucesso
-        if (clientSocket == -1){
+        if (socketUsuario == -1){
             erro("Falha na conexão, erro ao criar socket\n");
         } else { 
 
             // Caso o socket tenha sido criado com sucesso
-            if(clientSocket >= 0){ 
+            if(socketUsuario >= 0){ 
 
                 // Escreve uma mensagem para o servidor
-                write(clientSocket, mensagemConectado, strlen(mensagemConectado));
+                write(socketUsuario, mensagemConectado, strlen(mensagemConectado));
 
                 // Declara as informações do usuario
-                clients[qtdUsuarios].endereco = clientAddress;
-                clients[qtdUsuarios].socketID = clientSocket;
-                clients[qtdUsuarios].conectado = true;
-                clients[qtdUsuarios].clientID = qtdUsuarios;
+                usuarios[qtdUsuarios].endereco = enderecoUsuario;
+                usuarios[qtdUsuarios].socketID = socketUsuario;
+                usuarios[qtdUsuarios].conectado = true;
+                usuarios[qtdUsuarios].clientID = qtdUsuarios;
 
                 // Inicializa uma thread para o usuario
-                std::thread usuario (configurar_cliente, clients[qtdUsuarios]);
+                thread usuario (configurar_cliente, usuarios[qtdUsuarios]);
 
                 // Separa a thread de execução para continuar sendo executada independentemente.
                 usuario.detach();
@@ -315,9 +315,9 @@ int main(int argc, char *argv[]){
 
     // Com o servidor desligado, fecha os sockets de usuario e servidor
     for (int i = 0; i < qtdUsuarios; i++){
-        close(clients[i].socketID);
+        close(usuarios[i].socketID);
     }
-    close(serverSocket);
+    close(socketServidor);
 
     return 0; 
 }
