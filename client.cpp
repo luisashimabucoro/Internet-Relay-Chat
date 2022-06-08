@@ -35,10 +35,6 @@ void erro(const char *msg){
 }
 
 
-/*
-    Function that reads the client's nomeUsuario.
-
-*/
 void gravar_nome_usuario(){
 
     // Inicializando o array que receberá o nome do usuário
@@ -59,9 +55,7 @@ void gravar_nome_usuario(){
     array_nome_usuario[0] = '\0';
 }
 
-/*
-    Function responsible for sending messages to the server.
-*/
+
 void gerencia_envio(){
 
      // Enquanto o usuário estiver conectado
@@ -144,9 +138,6 @@ void gerencia_envio(){
     }
 }
 
-/*
-    Function responsible for receiving messages from the server.
-*/
 void gerencia_mensagens_recebidas(){
     // Enquanto o usuário estiver conectado
     while(!desconectado){
@@ -179,14 +170,14 @@ void gerencia_mensagens_recebidas(){
 int main(int argc, char *argv[]){
     
     // sockaddr_in é uma struct para gerenciar endereços de internet
-    struct sockaddr_in serverAddress;
+    struct sockaddr_in enderecoServidor;
     if (argc < 2) { 
         erro("Erro! Por favor informe a porta no Makefile!\n");
     }
-    // Variável para  armazenar a porta para realizar a conexão
-    // int numeroPorta;
+
     // Converte para inteiro a porta recebida por argumento
     numeroPorta = atoi(argv[1]);
+    
     /*
     Cria um socket que será utilizado pelo usuário
     'AF_INET' é o domínio de comunicação utilizado para comunicação IPv4
@@ -199,14 +190,6 @@ int main(int argc, char *argv[]){
     if (socketUsuario == -1){
         erro("Erro ao criar Socket\n");
     }
-    // server = gethostbyname(argv[1]); // return entry from host data base for host with NAME.
-
-    // Verifica se o número de argumentos é válido
-    // Se não for, mostra a mensagem de erro
-    // O server deve receber como argumento adicional a porta que será utilizada
-    
-
-    
 
     // servidorIP irá armazenar o IP do servidor cujo usuário deseja conectar
     string servidorIP;
@@ -214,23 +197,20 @@ int main(int argc, char *argv[]){
     getline(cin, servidorIP);
 
     
-    // Inicializa a struct serverAddress com 0s
-    bzero( (char *) &serverAddress, sizeof(serverAddress));   
+    // Inicializa a struct enderecoServidor com 0s
+    bzero( (char *) &enderecoServidor, sizeof(enderecoServidor));   
 
-    // 'AF_INET' é o domínio de comunicação utilizado para comunicação IPv4
-    serverAddress.sin_family = AF_INET;
+    enderecoServidor.sin_family = AF_INET;
     // Converto o IP do servidor para um formato de endereço de internet e o armazeno
-    
-    // bcopy( (char *)server->h_addr, (char *)&serverAddress.sin_addr.s_addr, server->h_length);   // copies server IP address into serverAddress
-    serverAddress.sin_addr.s_addr = inet_addr(servidorIP.c_str());	
+    enderecoServidor.sin_addr.s_addr = inet_addr(servidorIP.c_str());	
     // 'htons' converte um valor de porta de host para o formato de porta de internet
-    serverAddress.sin_port = htons(numeroPorta);
+    enderecoServidor.sin_port = htons(numeroPorta);
     
     /*
     Se a conexão for bem sucedida, retorna 0 e o funcionamento prossegue
     caso contrário, retorna -1 e exibe uma mensagem de erro
     */
-    if (connect(socketUsuario, (struct sockaddr *) &serverAddress, sizeof(serverAddress)) == -1){
+    if (connect(socketUsuario, (struct sockaddr *) &enderecoServidor, sizeof(enderecoServidor)) == -1){
         erro("Erro na conexão do Usuário\n");
     }
 
@@ -246,19 +226,22 @@ int main(int argc, char *argv[]){
     }
     
     printf("\n%s", buffer);
-    printf("\nBem vindo(a) ao chat, escolha seu nome de usuário: (Limite de 20 caracteres)\n\n");
+    printf("  ╔═════════════════════════════════════════════════════════════════════════════════╗\n");
+    printf("  ║Bem vindo(a) ao chat, escolha seu nome de usuário: (Limite de 20 caracteres)     ║\n");
+    printf("  ╚═════════════════════════════════════════════════════════════════════════════════╝\n\n");
+
     
     gravar_nome_usuario();
     write(socketUsuario, nomeUsuario, TAMANHO_USUARIO);    
 
     // Cria um thread para gerenciar as mensagens enviadas pelo usuário
     // Cria uma thread para gerenciar as mensagens recebidas pelo usuário
-    thread sendMessages (gerencia_envio);
+    thread threadEnviaMensagens (gerencia_envio);
     // Separa a thread de execução para continuar sendo executada independentemente.
-    sendMessages.detach();
-    thread receiveMessages (gerencia_mensagens_recebidas);
+    threadEnviaMensagens.detach();
+    thread threadRecebeMensagens (gerencia_mensagens_recebidas);
     // Separa a thread de execução para continuar sendo executada independentemente.
-    receiveMessages.detach();
+    threadRecebeMensagens.detach();
 
     while(!desconectado){
     // Enquanto o usuário estiver conectado, o cliente permancerá no servidor
