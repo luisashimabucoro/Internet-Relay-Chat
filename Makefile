@@ -8,7 +8,7 @@ rm:
 	rm server
 
 runClient:
-	./client 55555 
+	./client 
 
 runServer:
 	./server 55555
