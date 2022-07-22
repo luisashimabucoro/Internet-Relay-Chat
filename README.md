@@ -1,7 +1,7 @@
 # Internet-Relay-Chat
 
 Link do vídeo:
-https://drive.google.com/drive/folders/1Qoz82w6uqogf35Hw6D3vURFH4JbNINuv?usp=sharing
+https://youtu.be/1S09QcoK3uM
 
 Membros:
 - Luisa Balleroni Shimabucoro - 11832385
