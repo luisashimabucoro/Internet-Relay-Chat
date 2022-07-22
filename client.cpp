@@ -14,7 +14,7 @@
 
 using namespace std;
 
-#define TAMANHO_USUARIO 20 
+#define TAMANHO_USUARIO 50 
 #define TAMANHO_BUFFER 4096 
 #define TAMANHO_SERVIDOR 8192 
 #define TAMANHO_MAXIMO_BUFFER 40960 
