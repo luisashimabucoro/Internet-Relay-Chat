@@ -68,6 +68,76 @@ struct CANALTEXTO {
 std::vector<USUARIO> clients; 
 std::vector<CANALTEXTO> channels;   
 
+void erro(const char *msg){
+    perror(msg);
+    exit(1);
+}
+
+
+// Função que checa se o usuário é administrator do servidor
+bool administrador_do_canal(USUARIO usuario){
+    // Percorre os canais existentes para achar o canal cujo usuário está presente
+    for (int i = 0; i < quantidade_canais_criados; i++){
+        // Ao achar o canal do usuário, checa se ele é o administrador
+        if (strcmp (usuario.channelName, channels[i].nome) == 0){
+            // Se o usuário for administrador do canal, retorna true
+            if (channels[i].admin.ID_usuario == usuario.ID_usuario){
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+
+// Função para checar o comando /quit que se desconecta do servidor
+void checa_quit(char mensagem_texto[]){
+    // Checa se o servidor quer sair do servdor
+    // Se sim, fecha o socket e sai do programa
+    // Se não, não faz nada
+    if (strcasecmp(mensagem_texto, "/quit") == 0){    
+        flag = true;
+        // Envia mensagem de saída aos usuários
+        printf("\n Saindo do servidor... \n\n");
+
+        
+        for (int j = 0; j < quantidade_usuarios; j++) {
+            close(clients[j].ID_socket);
+        }
+        // Fecha o socket do servidor
+        close(socketServidor );
+        // Sai do programa
+        exit(0);
+    }
+}
+
+// Função que recebe o nome de um canal e o nome de usuário, percorre os usuários conectados ao canal fornecido
+// e retorna as informações do usuário desejado
+USUARIO *retorna_cliente(CANALTEXTO canal, char* nome){
+    // Percorre os usuários do canal para encontrar o usuário com o nome especificado
+    for (auto i = canal.conectado.begin(); i != canal.conectado.end(); i++) {
+        // Se o nome do usuário for o mesmo que o nome especificado
+        // retorna o ponteiro para o usuário
+        if (strcmp((*i).nome, nome) == 0){
+            return &(*i);
+        }
+    }
+
+    // Se o usuário não for encontrado, retorna NULL
+    return NULL;
+}
+
+// Nas especificações, foi pedido para que o usuário não possa sair do usuário utilizando 
+// "ctrl" + "c", então foi criado um handler para isso.
+// O handler é chamado quando o usuário pressiona "ctrl" + "c"
+void checa_atalho_saida(int sig_num){
+    signal(SIGINT, checa_atalho_saida); 
+    // Informa ao usuário que para sair do servidor, ele deve utilizar /quit ou ctrl+D
+    printf("Para sair do servidor, digite '/quit' ou use o comando  'Ctrl'+'D'\n");
+    fflush(stdout); 
+} 
+
 
 // função para criar um novo canal de texto
 void criar_canal(char* nome, USUARIO *admin){
@@ -104,43 +174,6 @@ bool checar_silenciamento(USUARIO usuario){
     return false;
 }
 
-void erro(const char *msg){
-    perror(msg);
-    exit(1);
-}
-
-
-// Função para checar o comando /quit que se desconecta do servidor
-void checa_quit(char mensagem_texto[]){
-    // Checa se o servidor quer sair do servdor
-    // Se sim, fecha o socket e sai do programa
-    // Se não, não faz nada
-    if (strcasecmp(mensagem_texto, "/quit") == 0){    
-        flag = true;
-        // Envia mensagem de saída aos usuários
-        printf("\n Saindo do servidor... \n\n");
-
-        
-        for (int j = 0; j < quantidade_usuarios; j++) {
-            close(clients[j].ID_socket);
-        }
-        // Fecha o socket do servidor
-        close(socketServidor );
-        // Sai do programa
-        exit(0);
-    }
-}
-
-
-// Nas especificações, foi pedido para que o usuário não possa sair do usuário utilizando 
-// "ctrl" + "c", então foi criado um handler para isso.
-// O handler é chamado quando o usuário pressiona "ctrl" + "c"
-void checa_atalho_saida(int sig_num){
-    signal(SIGINT, checa_atalho_saida); 
-    // Informa ao usuário que para sair do servidor, ele deve utilizar /quit ou ctrl+D
-    printf("Para sair do servidor, digite '/quit' ou use o comando  'Ctrl'+'D'\n");
-    fflush(stdout); 
-} 
 
 
 // Função responsável por enviar mensagens, cumprindo as especificações contidas no enunciado do trabalho
@@ -223,39 +256,6 @@ void envia_mensagem(char* mensagem_texto, USUARIO usuario, bool enviarParaTodos)
 
     // Libera o mutex
     mtx.unlock();
-}
-
-
-// Função que checa se o usuário é administrator do servidor
-bool administrador_do_canal(USUARIO usuario){
-    // Percorre os canais existentes para achar o canal cujo usuário está presente
-    for (int i = 0; i < quantidade_canais_criados; i++){
-        // Ao achar o canal do usuário, checa se ele é o administrador
-        if (strcmp (usuario.channelName, channels[i].nome) == 0){
-            // Se o usuário for administrador do canal, retorna true
-            if (channels[i].admin.ID_usuario == usuario.ID_usuario){
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-
-// Função que recebe o nome de um canal e o nome de usuário, percorre os usuários conectados ao canal fornecido
-// e retorna as informações do usuário desejado
-USUARIO *retorna_cliente(CANALTEXTO canal, char* nome){
-    // Percorre os usuários do canal para encontrar o usuário com o nome especificado
-    for (auto i = canal.conectado.begin(); i != canal.conectado.end(); i++) {
-        // Se o nome do usuário for o mesmo que o nome especificado
-        // retorna o ponteiro para o usuário
-        if (strcmp((*i).nome, nome) == 0){
-            return &(*i);
-        }
-    }
-
-    // Se o usuário não for encontrado, retorna NULL
-    return NULL;
 }
 
 
