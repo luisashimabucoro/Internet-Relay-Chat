@@ -20,8 +20,7 @@ até que o tamanho da mensagem seja menor que 4096.
 #define TAMANHO_BUFFER 4096 
 #define TAMANHO_MAXIMO 40960     
 
-// Limitamos o tamanho do nome do usuário, até para não ficar uma interface ruim no chat
-#define TAMANHO_USUARIO 20 
+#define TAMANHO_USUARIO 50 
 
 // Inicialmente, a quantidade de usuários será igual a 0
 int qtdUsuarios = 0;
