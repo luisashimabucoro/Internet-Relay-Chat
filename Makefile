@@ -8,10 +8,10 @@ rm:
 	rm server
 
 runClient:
-	./client 52547 
+	./client 55555 
 
 runServer:
-	./server 52547
+	./server 55555
 
 finish:
 	@stty icanon
